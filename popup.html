@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeetCode AI Assistant</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header>
+      <h1>LeetCode AI Assistant</h1>
+      <p class="subtitle">Settings</p>
+    </header>
+    
+    <main>
+      <section class="settings-section">
+        <h2>Assistance Mode</h2>
+        <div class="form-group">
+          <label for="assistMode">Mode</label>
+          <select id="assistMode" class="form-select">
+            <option value="hint">Hints</option>
+            <option value="critical-thinking">Critical Thinking</option>
+            <option value="problem-solving">Problem Solving</option>
+          </select>
+          <p class="input-help">Choose how the AI should assist you</p>
+        </div>
+      </section>
+      
+      <section class="settings-section">
+        <h2>API Settings</h2>
+        <div class="form-group">
+          <label for="apiKey">API Key</label>
+          <div class="api-key-container">
+            <input type="password" id="apiKey" placeholder="Enter your Groq API key">
+            <span id="apiKeyStatus" class="api-key-status"></span>
+          </div>
+          <p class="input-help">Get a key from Groq</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="model">AI Model</label>
+          <select id="model" class="form-select">
+            <option value="default">Llama 4 Scout (17B)</option>
+            <option value="advanced">Mixtral 8x7B</option>
+          </select>
+          <p class="input-help">Choose your preferred AI model</p>
+        </div>
+
+        <div class="form-group">
+          <label for="temperature">Temperature</label>
+          <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+          <span id="temperatureValue">0.7</span>
+          <p class="input-help">Higher values make responses more creative, lower values more focused</p>
+        </div>
+      </section>
+      
+      <section class="settings-section usage-stats">
+        <h2>Usage Statistics</h2>
+        <p>Total queries: <span id="usageCount">0</span></p>
+      </section>
+    </main>
+    
+    <footer>
+      <div id="statusMessage" class="status-message"></div>
+      <button id="saveSettings" class="primary-button">Save Settings</button>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html> 
