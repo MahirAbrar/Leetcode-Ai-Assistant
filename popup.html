@@ -41,17 +41,23 @@
         <div class="form-group">
           <label for="model">AI Model</label>
           <select id="model" class="form-select">
-            <option value="default">Llama 4 Scout (17B)</option>
-            <option value="advanced">Mixtral 8x7B</option>
+            <option value="default" title="Fast and efficient 17B parameter model, great for quick hints">Llama 4 Scout (17B) - Fast & Efficient</option>
+            <option value="advanced" title="Powerful 8x7B parameter model, excellent for detailed problem analysis">Mixtral 8x7B - Most Capable</option>
+            <option value="llama3" title="State-of-the-art 70B parameter model, best for complex problems">Llama 3 (70B) - Most Powerful</option>
+            <option value="gemma" title="Lightweight 7B parameter model, good for quick responses">Gemma 7B - Lightweight</option>
+            <option value="mistral" title="Efficient 7B parameter model, great balance of speed and capability">Mistral 7B - Balanced</option>
           </select>
-          <p class="input-help">Choose your preferred AI model</p>
+          <p class="input-help">Choose your preferred AI model. Hover over options for more details.</p>
         </div>
 
         <div class="form-group">
           <label for="temperature">Temperature</label>
-          <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
-          <span id="temperatureValue">0.7</span>
-          <p class="input-help">Higher values make responses more creative, lower values more focused</p>
+          <div class="temperature-container">
+            <input type="range" id="temperature" min="0.3" max="0.9" step="0.1" value="0.7">
+            <span id="temperatureValue">0.7</span>
+            <span class="temperature-range">(<span id="temperatureMin">0.3</span> - <span id="temperatureMax">0.9</span>)</span>
+          </div>
+          <p class="input-help">Higher values make responses more creative, lower values more focused. Range adjusts based on selected model.</p>
         </div>
       </section>
       

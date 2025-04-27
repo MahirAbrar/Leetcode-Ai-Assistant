@@ -145,12 +145,12 @@ function createAssistantPanel() {
   buttonContainer.className = 'ai-action-buttons';
   
   const buttons = [
-    { id: 'explain-code', text: 'Explain the Code', icon: '💡' },
-    { id: 'why-not-working', text: 'Why is it not working?', icon: '❓' },
-    { id: 'optimize-code', text: 'Optimize Code', icon: '⚡' },
-    { id: 'suggest-approach', text: 'Suggest Approach', icon: '🧠' }
+    { id: 'give-intuition', text: 'Give Intuition', icon: '💡' },
+    { id: 'error-finder', text: 'Error Finder', icon: '❓' },
+    { id: 'debug-guide', text: 'Debug Guide', icon: '⚡' },
   ];
   
+  // Add the buttons visually
   buttons.forEach(button => {
     const btn = document.createElement('button');
     btn.className = 'ai-action-button';
@@ -495,36 +495,6 @@ function checkApiKeyStatus() {
   console.log('Checking API key status...');
   chrome.runtime.sendMessage({ action: 'checkApiKeyStatus' }, function(response) {
     console.log('API Key Status Response:', response);
-    
-    // Create or update status display
-    let statusDiv = document.getElementById('api-key-status');
-    if (!statusDiv) {
-      statusDiv = document.createElement('div');
-      statusDiv.id = 'api-key-status';
-      statusDiv.style.position = 'fixed';
-      statusDiv.style.top = '10px';
-      statusDiv.style.right = '10px';
-      statusDiv.style.padding = '10px';
-      statusDiv.style.backgroundColor = 'rgba(0,0,0,0.8)';
-      statusDiv.style.color = 'white';
-      statusDiv.style.borderRadius = '5px';
-      statusDiv.style.zIndex = '10000';
-      document.body.appendChild(statusDiv);
-    }
-    
-    if (response.hasApiKey) {
-      statusDiv.innerHTML = `
-        <div>API Key Status: <span style="color: lightgreen">✓ Present</span></div>
-        <div>Length: ${response.apiKeyLength} characters</div>
-        <div>Prefix: ${response.apiKeyPrefix}...</div>
-        <div>Suffix: ...${response.apiKeySuffix}</div>
-      `;
-    } else {
-      statusDiv.innerHTML = `
-        <div>API Key Status: <span style="color: red">✗ Missing</span></div>
-        <div>Please set your API key in the extension settings</div>
-      `;
-    }
   });
 }
 
@@ -586,18 +556,16 @@ function handleActionButtonClick(actionId) {
   // Get appropriate prompt based on action
   let prompt = '';
   switch(actionId) {
-    case 'explain-code':
-      prompt = 'Please explain the current code, focusing on the logic and approach.';
+    case 'give-intuition':
+      prompt = 'Give multiple ways to approach this problem. Do not give the solution, just the different ways to approach it. Make sure to keep it short and concise. Do not include any code. It should guide the user to think about the problem in a multiple way.';
       break;
-    case 'why-not-working':
-      prompt = 'Analyze why the current code might not be working and suggest potential issues.';
+    case 'error-finder':
+      prompt = 'Give hints of where the code might be going wrong. Do not give the solution, just the hints. Make sure to keep it short and concise. Do not include any code. It should guide the user to think about the problem in a multiple way.';
       break;
-    case 'optimize-code':
-      prompt = 'Suggest optimizations for the current code, focusing on time and space complexity.';
+    case 'debug-guide':
+      prompt = 'Give a step-by-step guide on how to debug the current code. Do not give the solution, just the steps to debug the code. Make sure to keep it short and concise. Do not include any code. It should guide the user to think about the problem in a multiple way.';
       break;
-    case 'suggest-approach':
-      prompt = 'Suggest a different approach to solve this problem, explaining the reasoning.';
-      break;
+
   }
   
   console.log('Sending message to background script:', {

@@ -5,10 +5,20 @@
 const CONFIG = {
   models: {
     default: 'meta-llama/llama-4-scout-17b-16e-instruct',
-    advanced: 'mixtral-8x7b-32768'
+    advanced: 'mixtral-8x7b-32768',
+    llama3: 'meta-llama/llama-3-70b-instruct',
+    gemma: 'google/gemma-7b-it',
+    mistral: 'mistralai/mistral-7b-instruct'
   },
   defaultTemperature: 0.7,
-  defaultMode: 'hint'
+  defaultMode: 'hint',
+  modelTemperatures: {
+    default: { min: 0.3, max: 0.9, step: 0.1, default: 0.7 },
+    advanced: { min: 0.2, max: 0.8, step: 0.1, default: 0.6 },
+    llama3: { min: 0.1, max: 0.7, step: 0.1, default: 0.5 },
+    gemma: { min: 0.4, max: 1.0, step: 0.1, default: 0.8 },
+    mistral: { min: 0.3, max: 0.9, step: 0.1, default: 0.7 }
+  }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -22,7 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
     assistModeSelect: document.getElementById('assistMode'),
     temperatureInput: document.getElementById('temperature'),
     temperatureValue: document.getElementById('temperatureValue'),
-    statusMessage: document.getElementById('statusMessage')
+    statusMessage: document.getElementById('statusMessage'),
+    apiKeyStatus: document.getElementById('apiKeyStatus')
   };
   
   // Check if all required elements exist
@@ -48,43 +59,67 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add input listener to API key
   elements.apiKeyInput.addEventListener('input', validateApiKey);
   
+  // Add model change listener
+  elements.modelSelect.addEventListener('change', function() {
+    const model = this.value;
+    const tempConfig = CONFIG.modelTemperatures[model];
+    
+    elements.temperatureInput.min = tempConfig.min;
+    elements.temperatureInput.max = tempConfig.max;
+    elements.temperatureInput.step = tempConfig.step;
+    elements.temperatureInput.value = tempConfig.default;
+    elements.temperatureValue.textContent = tempConfig.default;
+    
+    showStatusMessage(`Temperature range adjusted for ${this.options[this.selectedIndex].text}`, false);
+  });
+  
   // Load current settings
   loadSettings();
 });
 
-// Load current settings from storage
+// Function to validate API key and update status
+function validateApiKey() {
+  const apiKey = elements.apiKeyInput.value;
+  const statusElement = document.getElementById('apiKeyStatus');
+  
+  if (!apiKey) {
+    statusElement.className = 'api-key-status invalid';
+    return;
+  }
+  
+  // Send message to background script to validate API key
+  chrome.runtime.sendMessage({ 
+    action: 'checkApiKeyStatus',
+    apiKey: apiKey 
+  }, function(response) {
+    if (response.hasApiKey) {
+      statusElement.className = 'api-key-status valid';
+      showStatusMessage('API key is valid', false);
+    } else {
+      statusElement.className = 'api-key-status invalid';
+      showStatusMessage('Invalid API key', true);
+    }
+  });
+}
+
+// Function to load settings and update UI
 function loadSettings() {
-  console.log('Loading settings from storage');
-  chrome.storage.sync.get(['apiKey', 'assistMode', 'usageCount', 'model', 'temperature'], function(settings) {
-    console.log('Retrieved settings:', settings);
-    
-    // Set API key
+  chrome.runtime.sendMessage({ action: 'getSettings' }, function(settings) {
     if (settings.apiKey) {
-      document.getElementById('apiKey').value = settings.apiKey;
+      elements.apiKeyInput.value = settings.apiKey;
+      validateApiKey();
     }
-    
-    // Set assist mode
     if (settings.assistMode) {
-      const assistModeSelect = document.getElementById('assistMode');
-      assistModeSelect.value = settings.assistMode;
+      elements.assistModeSelect.value = settings.assistMode;
     }
-    
-    // Set model
     if (settings.model) {
-      const modelSelect = document.getElementById('model');
-      modelSelect.value = settings.model;
+      elements.modelSelect.value = settings.model;
     }
-    
-    // Set temperature
-    if (settings.temperature !== undefined) {
-      const temperatureInput = document.getElementById('temperature');
-      const temperatureValue = document.getElementById('temperatureValue');
-      temperatureInput.value = settings.temperature;
-      temperatureValue.textContent = settings.temperature;
+    if (settings.temperature) {
+      elements.temperatureInput.value = settings.temperature;
+      elements.temperatureValue.textContent = settings.temperature;
     }
-    
-    // Set usage count
-    if (settings.usageCount !== undefined) {
+    if (settings.usageCount) {
       document.getElementById('usageCount').textContent = settings.usageCount;
     }
   });
@@ -172,37 +207,4 @@ function showStatusMessage(message, isError = false) {
   setTimeout(() => {
     statusElement.className = 'status-message';
   }, 3000);
-}
-
-// Function to validate API key with server
-async function validateApiKey(apiKey) {
-  console.log('Validating API key with server...');
-  try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: CONFIG.models.default,
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant.' }
-        ],
-        max_tokens: 1
-      })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('API validation failed:', errorData);
-      throw new Error(errorData.error?.message || `HTTP ${response.status}`);
-    }
-    
-    console.log('API key validation successful');
-    return true;
-  } catch (error) {
-    console.error('API key validation error:', error);
-    throw error;
-  }
 } 

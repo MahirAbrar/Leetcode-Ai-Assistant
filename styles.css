@@ -253,7 +253,7 @@ footer {
   color: var(--text-color);
   z-index: 1000;
   position: relative;
-  max-height: 300px;
+  max-height: 500px;
   overflow-y: auto;
 }
 
@@ -318,8 +318,9 @@ footer {
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: break-word;
-  max-height: 500px;
-  overflow-y: auto;
+  overflow-y: visible;
+  height: auto;
+  min-height: 100px;
 }
 
 /* Code blocks within the AI response */
@@ -534,8 +535,6 @@ footer {
   gap: 8px;
   padding: 12px;
   border-bottom: 1px solid var(--border-color);
-  position: sticky;
-  top: 0;
   background-color: inherit;
   z-index: 1001;
 }
@@ -567,9 +566,9 @@ footer {
 /* Chat container */
 .ai-chat-container {
   padding: 12px;
-  max-height: 400px;
-  overflow-y: auto;
   position: relative;
+  overflow: visible;
+  height: auto;
 }
 
 /* Chat message styles */
@@ -578,6 +577,8 @@ footer {
   padding: 8px 12px;
   border-radius: 8px;
   max-width: 85%;
+  word-wrap: break-word;
+  overflow: visible;
 }
 
 .ai-chat-message.user {
@@ -619,4 +620,26 @@ footer {
   .ai-chat-container {
     max-height: 300px;
   }
+}
+
+.temperature-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 5px 0;
+}
+
+.temperature-range {
+  font-size: 0.8em;
+  color: #666;
+  margin-left: 5px;
+}
+
+#temperature {
+  flex: 1;
+}
+
+#temperatureValue {
+  min-width: 30px;
+  text-align: right;
 } 
