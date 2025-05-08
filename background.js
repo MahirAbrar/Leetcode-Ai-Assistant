@@ -15,32 +15,86 @@ const API_CONFIG = {
     }
   },
   
+  // OpenAI API endpoint
+  openai: {
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    models: {
+      default: 'gpt-4o',
+      advanced: 'gpt-4.1',
+      llama3: 'gpt-4.1',
+      gemma: 'gpt-4.1-mini',
+      mistral: 'gpt-4o-mini'
+    }
+  },
+  
   // Fallback messages when no API key is set
   fallback: {
-    'hint': "I can provide hints for this problem, but first you need to set up an API key. Click the extension icon and enter your Groq API key in the settings.",
-    'critical-thinking': "I can help analyze this problem with critical thinking steps, but you need to set up an API key first. Click the extension icon and enter your Groq API key in the settings.",
-    'problem-solving': "I can guide you through solving this problem step by step, but you need to set up an API key first. Click the extension icon and enter your Groq API key in the settings."
+    'Small Hints': "I'd like to provide a small hint for this problem, but I need an API key to access my full capabilities. Please click the extension icon and enter your API key in the settings to unlock helpful guidance.",
+    'Medium Hints': "I can analyze this problem and provide thoughtful guidance, but first I need an API key to unlock my full capabilities. Please click the extension icon and enter your API key in the settings.",
+    'Big Hints': "I'd love to walk you through this problem step-by-step, but I need an API key to access my full capabilities. Please click the extension icon and enter your API key in the settings.",
+    'Metaphorical Hints': "I can explain this problem using creative metaphors and analogies, but I need an API key to unlock my full capabilities. Please click the extension icon and enter your API key in the settings."
   }
 };
 
 // Mode-specific prompts
 const PROMPTS = {
-  'hint': `
-Give a small hints to help them solve this problem without giving away the full solution. 
-Be concise and focus on guiding their thinking rather than providing code.
-Tell the user what data structures they can use to solve the problem.`,
+  'Small Hints': `
+You are an expert computer science tutor helping a student solve a LeetCode programming problem. Your goal is to provide minimal guidance that points them in the right direction without revealing the solution.
 
-  'critical-thinking': `
-Analyze this problem and provide critical thinking steps to approach it. Make the user think of ways to solve the problem.
-Break down the problem into smaller parts and suggest useful data structures or algorithms.
-Don't provide full code solutions, but guide their thought process.`,
+Instructions:
+1. Identify ONE key insight or concept that would help solve this problem
+2. Briefly mention a relevant data structure or algorithm pattern WITHOUT explaining implementation details
+3. Ask a thought-provoking question that guides their thinking
+4. Keep your response under 150 words and focused on conceptual understanding
+5. DO NOT provide code or explicit algorithm steps
 
-  'problem-solving': `
-Guide them through solving this problem step by step.
-Start with a high-level approach, then break it down into detailed steps.
-If they already have some code, suggest how to improve or fix it.
-You can include code snippets to illustrate specific parts, but focus on explaining the solution approach.
-Tell the user what data structures they can use to solve the problem.`,
+Remember: The goal is to help the student learn through discovery, not to solve the problem for them.`,
+
+  'Medium Hints': `
+You are an expert programming coach analyzing a LeetCode problem for a student. Your task is to provide moderate guidance that helps them develop their own solution.
+
+Instructions:
+1. Identify 2-3 key insights or patterns needed to solve this problem
+2. Suggest appropriate data structures/algorithms with brief explanations of WHY they're suitable
+3. Break down the problem-solving approach into 3-4 conceptual steps (without implementation details)
+4. Point out potential edge cases or optimization considerations
+5. Use bullet points for clarity
+6. DO NOT provide a complete solution or working code
+
+Remember: Strike a balance between providing sufficient guidance and allowing the student to develop their own implementation.`,
+
+  'Big Hints': `
+You are an experienced programming instructor walking a student through a LeetCode problem. Your task is to provide detailed guidance that clearly outlines the solution approach.
+
+Instructions:
+1. Explain the core algorithm/approach needed to solve this problem
+2. Break down the solution into clear, logical steps
+3. Explain the reasoning behind each step
+4. Highlight the specific data structures needed and why they're appropriate
+5. Discuss time and space complexity considerations
+6. If there are multiple approaches, briefly compare them
+7. You may include short pseudocode snippets to illustrate specific concepts
+8. Use a structured format with headers and bullet points
+
+Remember: While providing detailed guidance, still encourage understanding rather than memorization of the solution.`,
+
+  'Metaphorical Hints': `
+You are a creative explainer who helps students understand programming concepts through metaphors and analogies. Your task is to explain a LeetCode problem solution using everyday concepts.
+
+Instructions:
+1. Create a vivid, coherent metaphor that maps to the programming solution
+2. Ensure your metaphor accurately represents the key algorithmic concepts
+3. Use familiar real-world scenarios (traffic flow, cooking, organizing books, etc.)
+4. Explain how this metaphor maps to the computational approach
+5. Keep technical jargon to an absolute minimum
+6. Make your explanation engaging and visual
+7. Use simple language that someone with no programming background could understand
+8. DO NOT include any code or technical programming terms - stay entirely in the metaphorical realm
+9. Structure your response as a story with a clear beginning, middle, and end
+10. Use characters or objects to represent data structures and algorithms
+11. Include sensory details to make your metaphor more memorable
+
+Remember: The goal is to provide an intuitive understanding of the algorithm through creative, relatable storytelling that creates "aha" moments of understanding.`
 };
 
 // Helper function to send startup message to LeetCode tabs
@@ -63,8 +117,9 @@ function sendStartupMessage() {
 chrome.runtime.onInstalled.addListener(() => {
   // Set default settings
   chrome.storage.sync.set({
-    assistMode: 'hint',
+    assistMode: 'Small Hints',
     apiKey: '',
+    apiProvider: 'groq',
     usageCount: 0,
     model: 'default',
     temperature: 0.7
@@ -82,15 +137,16 @@ chrome.runtime.onStartup.addListener(() => {
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'checkApiKeyStatus') {
-    chrome.storage.sync.get(['apiKey'], function(settings) {
+    chrome.storage.sync.get(['apiKey', 'apiProvider'], function(settings) {
       const apiKey = message.apiKey || settings.apiKey;
+      const apiProvider = message.apiProvider || settings.apiProvider || 'groq';
       
       if (!apiKey) {
         sendResponse({ hasApiKey: false });
         return;
       }
       
-      validateApiKey(apiKey)
+      validateApiKey(apiKey, apiProvider)
         .then(isValid => {
           sendResponse({ 
             hasApiKey: true,
@@ -108,13 +164,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.action === 'getAIAssistance') {
-    chrome.storage.sync.get(['apiKey', 'model', 'temperature'], (settings) => {
+    chrome.storage.sync.get(['apiKey', 'model', 'temperature', 'apiProvider', 'assistMode'], (settings) => {
       if (!settings.apiKey) {
-        sendResponse({ error: 'Please set your Groq API key in the extension settings.', isApiKeyMissing: true });
+        // Get the appropriate fallback message based on mode
+        const mode = message.data.mode || settings.assistMode || 'Small Hints';
+        const fallbackMsg = API_CONFIG.fallback[mode] || API_CONFIG.fallback['Small Hints'];
+        sendResponse({ error: fallbackMsg, isApiKeyMissing: true });
         return;
       }
       
-      validateApiKey(settings.apiKey)
+      validateApiKey(settings.apiKey, settings.apiProvider)
         .then(isValid => {
           if (!isValid) {
             sendResponse({ error: 'Invalid API key. Please check your API key in the extension settings.', isApiKeyInvalid: true });
@@ -148,12 +207,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     getSettings(sendResponse);
     return true;
   }
+  
+  // Add a new listener for toggling debug mode
+  if (message.action === 'toggleDebugMode') {
+    chrome.storage.sync.get(['debugMode'], function(settings) {
+      const newDebugMode = !settings.debugMode;
+      chrome.storage.sync.set({ debugMode: newDebugMode }, function() {
+        console.log(`Debug mode ${newDebugMode ? 'enabled' : 'disabled'}`);
+        sendResponse({ success: true, debugMode: newDebugMode });
+      });
+    });
+    return true;
+  }
 });
 
 // Get AI assistance based on problem, code, and mode
 async function getAIAssistance(data, settings) {
   try {
-    const mode = settings.assistMode || data.mode;
+    // Get mode from data or from settings, with proper fallback
+    const mode = data.mode || settings.assistMode || 'Small Hints';
+    
+    console.log(`Using assistance mode: ${mode}`);
+    
+    // Verify that we have a prompt for this mode
+    if (!PROMPTS[mode]) {
+      console.warn(`Unknown mode: ${mode}, falling back to Small Hints`);
+    }
+    
     const prompt = getPromptForMode(mode, data.problem, data.code);
     const response = await fetchAIResponse(prompt, settings);
     
@@ -166,9 +246,9 @@ async function getAIAssistance(data, settings) {
     let errorMessage = 'Error getting AI assistance: ';
     
     if (error.message.includes('API key')) {
-      errorMessage = "Invalid API key. Please check your Groq API key in the extension settings.";
+      errorMessage = "Invalid API key. Please check your API key in the extension settings.";
     } else if (error.message.includes('rate limit')) {
-      errorMessage = "You've hit the API rate limit. Please try again later or check your Groq account usage.";
+      errorMessage = "You've hit the API rate limit. Please try again later or check your account usage.";
     } else if (error.message.includes('quota')) {
       errorMessage = "Your API usage quota has been exceeded. Please check your billing information or use a different API key.";
     } else if (error.message.includes('network')) {
@@ -183,32 +263,37 @@ async function getAIAssistance(data, settings) {
 
 // Get the appropriate prompt based on mode
 function getPromptForMode(mode, problem, code) {
-  const basePrompt = PROMPTS[mode] || PROMPTS['hint'];
+  const basePrompt = PROMPTS[mode] || PROMPTS['Small Hints'];
   
-  return `${basePrompt}
+  const fullPrompt = `${basePrompt}
 
-Problem: ${problem.title}
+PROBLEM:
+Title: ${problem.title}
 Difficulty: ${problem.difficulty}
 URL: ${problem.url || 'Not provided'}
 
-Problem Description:
+PROBLEM DESCRIPTION:
 ${stripHtml(problem.description)}
 
-Current Code:
+STUDENT'S CURRENT CODE:
 \`\`\`
 ${code}
 \`\`\`
 
-Please provide assistance with this problem.`;
+Based on the instructions above, provide appropriate guidance for this problem.`;
+
+  return fullPrompt;
 }
 
 // Make the actual API call to the AI service
 async function fetchAIResponse(prompt, settings) {
   try {
+    const apiProvider = settings.apiProvider || 'groq';
     const modelKey = settings.model || 'default';
-    const model = API_CONFIG.groq.models[modelKey];
+    const model = API_CONFIG[apiProvider].models[modelKey];
+    const endpoint = API_CONFIG[apiProvider].endpoint;
     
-    const response = await fetch(API_CONFIG.groq.endpoint, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -240,7 +325,7 @@ async function fetchAIResponse(prompt, settings) {
     if (error.message.includes('API key')) {
       throw new Error("Invalid API key. Please check your API key in the extension settings.");
     } else if (error.message.includes('rate limit')) {
-      throw new Error("You've hit the API rate limit. Please try again later or check your Groq account usage.");
+      throw new Error("You've hit the API rate limit. Please try again later or check your account usage.");
     } else if (error.message.includes('quota')) {
       throw new Error("Your API usage quota has been exceeded. Please check your billing information or use a different API key.");
     } else if (error.message.includes('network')) {
@@ -270,7 +355,7 @@ function saveSettings(settings, sendResponse) {
 
 // Get current settings
 function getSettings(sendResponse) {
-  chrome.storage.sync.get(['apiKey', 'assistMode', 'usageCount', 'model'], function(settings) {
+  chrome.storage.sync.get(['apiKey', 'apiProvider', 'assistMode', 'usageCount', 'model', 'temperature'], function(settings) {
     sendResponse(settings);
   });
 }
@@ -296,16 +381,20 @@ function stripHtml(html) {
 }
 
 // Helper function to validate API key
-async function validateApiKey(apiKey) {
+async function validateApiKey(apiKey, apiProvider) {
   try {
-    const response = await fetch(API_CONFIG.groq.endpoint, {
+    const provider = apiProvider || 'groq';
+    const endpoint = API_CONFIG[provider].endpoint;
+    const model = API_CONFIG[provider].models.default;
+    
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: API_CONFIG.groq.models.default,
+        model: model,
         messages: [
           { role: 'system', content: 'You are a helpful assistant.' }
         ],

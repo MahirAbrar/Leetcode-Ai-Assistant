@@ -19,35 +19,45 @@
         <div class="form-group">
           <label for="assistMode">Mode</label>
           <select id="assistMode" class="form-select">
-            <option value="hint">Hints</option>
-            <option value="critical-thinking">Critical Thinking</option>
-            <option value="problem-solving">Problem Solving</option>
+            <option value="Small Hints">Small Hints</option>
+            <option value="Medium Hints">Medium Hints</option>
+            <option value="Big Hints">Big Hints</option>
+            <option value="Metaphorical Hints">Metaphorical Hints</option>
           </select>
-          <p class="input-help">Choose how the AI should assist you</p>
+          <p class="input-help">Choose how you want the AI to explain solutions</p>
         </div>
       </section>
       
       <section class="settings-section">
         <h2>API Settings</h2>
         <div class="form-group">
+          <label for="apiProvider">API Provider</label>
+          <select id="apiProvider" class="form-select">
+            <option value="groq">Groq API</option>
+            <option value="openai">OpenAI API</option>
+          </select>
+          <p class="input-help">Choose your preferred API provider</p>
+        </div>
+
+        <div class="form-group">
           <label for="apiKey">API Key</label>
           <div class="api-key-container">
-            <input type="password" id="apiKey" placeholder="Enter your Groq API key">
+            <input type="password" id="apiKey" placeholder="Enter your API key">
             <span id="apiKeyStatus" class="api-key-status"></span>
           </div>
-          <p class="input-help">Get a key from Groq</p>
+          <p class="input-help" id="apiKeyHelp">Get a key from Groq</p>
         </div>
         
         <div class="form-group">
           <label for="model">AI Model</label>
           <select id="model" class="form-select">
-            <option value="default" title="Fast and efficient 17B parameter model, great for quick hints">Llama 4 Scout (17B) - Fast & Efficient</option>
-            <option value="advanced" title="Powerful 8x7B parameter model, excellent for detailed problem analysis">Mixtral 8x7B - Most Capable</option>
-            <option value="llama3" title="State-of-the-art 70B parameter model, best for complex problems">Llama 3 (70B) - Most Powerful</option>
-            <option value="gemma" title="Lightweight 7B parameter model, good for quick responses">Gemma 7B - Lightweight</option>
-            <option value="mistral" title="Efficient 7B parameter model, great balance of speed and capability">Mistral 7B - Balanced</option>
+            <option value="default" title="When using Groq: Llama 4 Scout (17B). When using OpenAI: GPT-4o">Default Model</option>
+            <option value="advanced" title="When using Groq: Mixtral 8x7B. When using OpenAI: GPT-4.1">Advanced Model</option>
+            <option value="llama3" title="When using Groq: Llama 3 (70B). When using OpenAI: GPT-4.1 (High Precision)">Most Powerful</option>
+            <option value="gemma" title="When using Groq: Gemma 7B. When using OpenAI: GPT-4.1-mini">Balanced</option>
+            <option value="mistral" title="When using Groq: Mistral 7B. When using OpenAI: GPT-4o-mini">Fast & Efficient</option>
           </select>
-          <p class="input-help">Choose your preferred AI model. Hover over options for more details.</p>
+          <p class="input-help">Model options change based on selected provider. Hover for details.</p>
         </div>
 
         <div class="form-group">
