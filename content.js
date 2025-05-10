@@ -1,8 +1,3 @@
-console.log('LeetCode AI Assistant content script loaded!');
-
-// LeetCode AI Assistant Content Script
-// This script runs directly on the LeetCode website
-
 // Configuration
 const CONFIG = {
   buttonId: 'leetcode-ai-assistant-btn',
@@ -21,15 +16,12 @@ function isProblemPage() {
   const isProblem = location.href.includes('/problems/') && 
                    !location.href.includes('/problemset/') && 
                    !location.href.includes('/description/');
-  console.log('Is problem page?', isProblem, 'URL:', location.href);
   return isProblem;
 }
 
 // Initialize when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOMContentLoaded event fired');
   if (isProblemPage() && !isInitialized) {
-    console.log('Initializing on problem page');
     initialize();
   }
 });
@@ -39,14 +31,12 @@ let lastUrl = location.href;
 new MutationObserver(() => {
   const url = location.href;
   if (url !== lastUrl) {
-    console.log('URL changed from', lastUrl, 'to', url);
     lastUrl = url;
     
     // Reset initialization state when URL changes
     isInitialized = false;
     
     if (isProblemPage()) {
-      console.log('URL changed to problem page, initializing');
       setTimeout(initialize, 1000); // Wait for page to fully render
     }
   }
@@ -54,36 +44,30 @@ new MutationObserver(() => {
 
 // Initialize the extension
 function initialize() {
-  console.log('Starting initialization...');
   
   // Prevent multiple initializations
   if (isInitialized) {
-    console.log('Already initialized, skipping');
     return;
   }
   
   // Only run on problem pages
   if (!isProblemPage()) {
-    console.log('Not a problem page, skipping initialization');
     return;
   }
   
   // Get saved mode from storage
   chrome.storage.sync.get(['assistMode'], function(result) {
-    console.log('Retrieved mode from storage:', result);
     if (result.assistMode) {
       currentMode = result.assistMode;
     }
     
     // Wait for LeetCode editor to load
     waitForEditor().then(() => {
-      console.log('Editor loaded, injecting button');
       injectAssistantButton();
       setupCodeChangeListener();
       
       // Check if our panel already exists, if not, create an empty one
       if (!document.getElementById(CONFIG.responseContainerId)) {
-        console.log('Creating assistant panel');
         createAssistantPanel();
       }
       
@@ -323,26 +307,21 @@ function makeDraggable(element, handle) {
 
 // Inject the AI assistant button into the LeetCode interface
 function injectAssistantButton() {
-  console.log('Attempting to inject AI assistant button...');
   
   // Find the specific toolbar div the user wants to place the button in
   const toolbarDiv = document.querySelector('.flex.h-8.items-center.justify-between.border-b.p-1');
-  console.log('Found toolbar div:', toolbarDiv);
   
   // If we can't find the toolbar, try the previous selectors as fallbacks
   const actionBar = toolbarDiv || 
                    document.querySelector('.action-wrapper') || 
                    document.querySelector('.question-fast-picker-wrapper');
-  console.log('Found action bar:', actionBar);
   
   if (!actionBar) {
-    console.log('No action bar found! Available elements:', document.body.innerHTML);
     return;
   }
   
   // Check if our button already exists
   if (document.getElementById(CONFIG.buttonId)) {
-    console.log('Button already exists');
     return;
   }
   
@@ -355,7 +334,6 @@ function injectAssistantButton() {
   
   // If we found the specific toolbar div, we need to style our button to match the other buttons
   if (toolbarDiv) {
-    console.log('Found modern UI toolbar, adding specific styles');
     // Additional styling to match the other buttons in the toolbar
     button.classList.add('relative', 'inline-flex', 'gap-2', 'items-center', 'justify-center', 
                          'font-medium', 'cursor-pointer', 'transition-colors', 'bg-transparent',
@@ -365,7 +343,6 @@ function injectAssistantButton() {
   
   // Add click handler
   button.addEventListener('click', function(e) {
-    console.log('AI Assist button clicked');
     e.preventDefault();
     e.stopPropagation();
     handleAssistantRequest();
@@ -374,37 +351,30 @@ function injectAssistantButton() {
   // Add to page - if it's the toolbar, add it to the buttons div on the right
   if (toolbarDiv) {
     const buttonGroup = toolbarDiv.querySelector('.flex.items-center.gap-1');
-    console.log('Found button group:', buttonGroup);
     
     if (buttonGroup) {
       // Insert as the first button in the group
       buttonGroup.insertBefore(button, buttonGroup.firstChild);
-      console.log('Button inserted into button group');
     } else {
       // Fallback
       actionBar.appendChild(button);
-      console.log('Button added to action bar (fallback)');
     }
   } else {
     // Fallback for other layouts
     actionBar.appendChild(button);
-    console.log('Button added to action bar (other layout)');
   }
   
   // Log the final state
-  console.log('Button injection complete. Current button state:', button);
 }
 
 // Set up listener for code changes
 function setupCodeChangeListener() {
   // We'll use a MutationObserver to detect changes to the editor
   // This is a placeholder for actual implementation
-  console.log('Code change listener setup');
 }
 
 // Handle when user clicks the AI assist button
 function handleAssistantRequest() {
-  console.log('handleAssistantRequest called');
   
   // Get problem statement and code
   const problemData = extractProblemData();
@@ -415,7 +385,6 @@ function handleAssistantRequest() {
   
   // Check if editor is empty
   if (!userCode.trim()) {
-    console.log('Editor is empty');
     displayResponse("Please write some code first before asking for assistance.", true);
     return;
   }
@@ -455,20 +424,17 @@ function extractProblemData() {
 
 // Extract user's code from the editor
 function extractUserCode() {
-  console.log('Attempting to extract user code...');
   
   // Try multiple approaches to get the code
   
   // Approach 1: Try Monaco editor (new LeetCode UI)
   const monacoEditor = document.querySelector('.monaco-editor');
   if (monacoEditor) {
-    console.log('Found Monaco editor');
     // Monaco editor stores code in a model
     if (window.monaco && window.monaco.editor) {
       const models = window.monaco.editor.getModels();
       if (models && models.length > 0) {
         const code = models[0].getValue();
-        console.log('Extracted code from Monaco model:', code);
         return code;
       }
     }
@@ -476,7 +442,6 @@ function extractUserCode() {
     // Alternative approach for Monaco: look for the textarea
     const textarea = monacoEditor.querySelector('textarea.inputarea');
     if (textarea && textarea.value) {
-      console.log('Extracted code from Monaco textarea:', textarea.value);
       return textarea.value;
     }
   }
@@ -484,12 +449,10 @@ function extractUserCode() {
   // Approach 2: Try CodeMirror editor (older LeetCode UI)
   const codeMirror = document.querySelector('.CodeMirror');
   if (codeMirror) {
-    console.log('Found CodeMirror editor');
     if (window.CodeMirror) {
       const cm = codeMirror.CodeMirror;
       if (cm && typeof cm.getValue === 'function') {
         const code = cm.getValue();
-        console.log('Extracted code from CodeMirror:', code);
         return code;
       }
     }
@@ -497,7 +460,6 @@ function extractUserCode() {
     // Alternative approach for CodeMirror: look for the textarea
     const textarea = codeMirror.querySelector('textarea');
     if (textarea && textarea.value) {
-      console.log('Extracted code from CodeMirror textarea:', textarea.value);
       return textarea.value;
     }
   }
@@ -505,35 +467,29 @@ function extractUserCode() {
   // Approach 3: Try to find the code in visible elements
   const editorLines = document.querySelectorAll('.view-lines, .CodeMirror-lines');
   if (editorLines.length > 0) {
-    console.log('Found editor lines');
     let code = '';
     editorLines.forEach(line => {
       code += line.textContent + '\n';
     });
-    console.log('Extracted code from visible lines:', code);
     return code.trim();
   }
   
   // Approach 4: Try to find the code in pre elements
   const preElements = document.querySelectorAll('pre.CodeMirror-line, .view-line');
   if (preElements.length > 0) {
-    console.log('Found pre elements');
     let code = '';
     preElements.forEach(pre => {
       code += pre.textContent + '\n';
     });
-    console.log('Extracted code from pre elements:', code);
     return code.trim();
   }
   
   // Approach 5: Try to find the code in the ace editor
   const aceEditor = document.querySelector('.ace_editor');
   if (aceEditor && window.ace) {
-    console.log('Found Ace editor');
     const editor = window.ace.edit(aceEditor);
     if (editor) {
       const code = editor.getValue();
-      console.log('Extracted code from Ace editor:', code);
       return code;
     }
   }
@@ -542,12 +498,10 @@ function extractUserCode() {
   const textareas = document.querySelectorAll('textarea');
   for (const textarea of textareas) {
     if (textarea.value && textarea.value.includes('function') || textarea.value.includes('class')) {
-      console.log('Extracted code from generic textarea:', textarea.value);
       return textarea.value;
     }
   }
   
-  console.log('Could not find code in editor');
   return '';
 }
 
@@ -767,7 +721,6 @@ function updateActionButtons() {
 
 // Function to handle action button clicks
 function handleActionButtonClick(actionId) {
-  console.log('Action button clicked:', actionId);
   console.log('Current hint mode:', currentMode);
   
   // Get problem data and code
