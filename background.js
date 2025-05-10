@@ -224,10 +224,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Get AI assistance based on problem, code, and mode
 async function getAIAssistance(data, settings) {
   try {
-    // Get mode from data or from settings, with proper fallback
+    // Get mode from data or settings, with proper logging
     const mode = data.mode || settings.assistMode || 'Small Hints';
     
-    console.log(`Using assistance mode: ${mode}`);
+    console.log('===== LeetCode AI Assistant Mode =====');
+    console.log(`Requested mode: ${data.mode}`);
+    console.log(`Settings mode: ${settings.assistMode}`);
+    console.log(`Using mode: ${mode}`);
     
     // Verify that we have a prompt for this mode
     if (!PROMPTS[mode]) {
@@ -338,15 +341,23 @@ async function fetchAIResponse(prompt, settings) {
 
 // Save user settings
 function saveSettings(settings, sendResponse) {
+  console.log('Saving settings:', settings);
+  
   chrome.storage.sync.set(settings, function() {
+    // If assist mode changed, notify all open tabs
     if (settings.assistMode) {
-      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'modeChanged',
-            mode: settings.assistMode
-          });
-        }
+      console.log('Assist mode changed to:', settings.assistMode);
+      
+      chrome.tabs.query({}, function(tabs) {
+        tabs.forEach(tab => {
+          // Only send to LeetCode tabs
+          if (tab.url && tab.url.includes('leetcode.com')) {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'modeChanged',
+              mode: settings.assistMode
+            });
+          }
+        });
       });
     }
     sendResponse({ success: true });

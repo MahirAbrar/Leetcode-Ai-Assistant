@@ -74,7 +74,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Initialize temperature slider
+  // IMPORTANT: Load settings FIRST before setting up any event handlers
+  // This ensures saved settings take precedence over default values
+  loadSettings();
+  
+  // Initialize temperature slider AFTER settings are loaded
   elements.temperatureInput.addEventListener('input', function() {
     elements.temperatureValue.textContent = this.value;
   });
@@ -107,21 +111,35 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Add model change listener
-  elements.modelSelect.addEventListener('change', function() {
+  elements.modelSelect.addEventListener('change', function(e) {
     const model = this.value;
     const tempConfig = CONFIG.modelTemperatures[model];
     
-    elements.temperatureInput.min = tempConfig.min;
-    elements.temperatureInput.max = tempConfig.max;
-    elements.temperatureInput.step = tempConfig.step;
-    elements.temperatureInput.value = tempConfig.default;
-    elements.temperatureValue.textContent = tempConfig.default;
+    // Check if this is a user-initiated change (not from loading settings)
+    const isUserChange = e.isTrusted;
     
-    showStatusMessage(`Temperature range adjusted for ${this.options[this.selectedIndex].text}`, false);
+    if (isUserChange) {
+      console.log('User changed model to:', model);
+      elements.temperatureInput.min = tempConfig.min;
+      elements.temperatureInput.max = tempConfig.max;
+      elements.temperatureInput.step = tempConfig.step;
+      elements.temperatureInput.value = tempConfig.default;
+      elements.temperatureValue.textContent = tempConfig.default;
+      
+      showStatusMessage(`Temperature range adjusted for ${this.options[this.selectedIndex].text}`, false);
+    } else {
+      console.log('Model set programmatically to:', model);
+      // Don't reset temperature to default if loading from settings
+    }
   });
-  
-  // Load current settings
-  loadSettings();
+});
+
+// Additionally, listen for visibility changes to reload settings when popup regains focus
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) {
+    console.log('Popup became visible again, reloading settings');
+    loadSettings();
+  }
 });
 
 // Function to validate API key and update status
@@ -153,10 +171,39 @@ function validateApiKey() {
 
 // Function to load settings and update UI
 function loadSettings() {
-  chrome.runtime.sendMessage({ action: 'getSettings' }, function(settings) {
-    if (settings.apiKey) {
-      elements.apiKeyInput.value = settings.apiKey;
+  console.log('Loading settings from storage...');
+  
+  chrome.storage.sync.get(['apiKey', 'apiProvider', 'assistMode', 'usageCount', 'model', 'temperature'], function(settings) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading settings from chrome.storage.sync:', chrome.runtime.lastError);
+      
+      // Try to load from localStorage as fallback
+      try {
+        const localSettings = localStorage.getItem('leetcode_assistant_settings');
+        if (localSettings) {
+          console.log('Found settings in localStorage, using as fallback');
+          settings = JSON.parse(localSettings);
+        }
+      } catch (e) {
+        console.error('Failed to load settings from localStorage:', e);
+        showStatusMessage('Failed to load settings', true);
+        return;
+      }
     }
+    
+    console.log('Settings retrieved:', {
+      hasApiKey: !!settings.apiKey,
+      apiKeyLength: settings.apiKey ? settings.apiKey.length : 0,
+      apiProvider: settings.apiProvider,
+      assistMode: settings.assistMode,
+      model: settings.model,
+      temperature: settings.temperature,
+      usageCount: settings.usageCount
+    });
+    
+    // Apply settings to form elements in a specific order to avoid overrides
+    
+    // 1. First set the API provider (this affects model options)
     if (settings.apiProvider) {
       elements.apiProviderSelect.value = settings.apiProvider;
       // Update placeholder and help text based on provider
@@ -167,21 +214,41 @@ function loadSettings() {
       // Update model options based on provider
       updateModelOptions(settings.apiProvider);
     }
-    if (settings.assistMode) {
-      elements.assistModeSelect.value = settings.assistMode;
-    }
+    
+    // 2. Set the model (affects temperature range)
     if (settings.model) {
       elements.modelSelect.value = settings.model;
+      
+      // Update temperature range based on model without changing value
+      const model = settings.model;
+      const tempConfig = CONFIG.modelTemperatures[model];
+      elements.temperatureInput.min = tempConfig.min;
+      elements.temperatureInput.max = tempConfig.max;
+      elements.temperatureInput.step = tempConfig.step;
     }
+    
+    // 3. Set the temperature (should be done after model to avoid overriding)
     if (settings.temperature) {
+      console.log('Setting temperature to saved value:', settings.temperature);
       elements.temperatureInput.value = settings.temperature;
       elements.temperatureValue.textContent = settings.temperature;
     }
+    
+    // 4. Set other settings that don't depend on each other
+    if (settings.apiKey) {
+      elements.apiKeyInput.value = settings.apiKey;
+    }
+    
+    if (settings.assistMode) {
+      elements.assistModeSelect.value = settings.assistMode;
+    }
+    
     if (settings.usageCount) {
       document.getElementById('usageCount').textContent = settings.usageCount;
     }
     
     validateApiKey();
+    showStatusMessage('Settings loaded successfully');
   });
 }
 
@@ -248,24 +315,82 @@ function saveSettings() {
     return;
   }
   
-  // Save settings
-  chrome.storage.sync.set(settings, function() {
-    if (chrome.runtime.lastError) {
-      console.error('Error saving settings:', chrome.runtime.lastError);
-      showStatusMessage('Failed to save settings: ' + chrome.runtime.lastError.message, true);
-      elements.saveButton.textContent = originalText;
-      elements.saveButton.disabled = false;
-      return;
-    }
-    
-    console.log('Settings saved successfully');
-    showStatusMessage('Settings saved successfully!');
-    elements.saveButton.textContent = 'Saved!';
-    
-    setTimeout(() => {
-      elements.saveButton.textContent = originalText;
-      elements.saveButton.disabled = false;
-    }, 2000);
+  // Also save to local storage as a backup
+  try {
+    localStorage.setItem('leetcode_assistant_settings', JSON.stringify(settings));
+    console.log('Settings saved to localStorage as backup');
+  } catch (e) {
+    console.warn('Could not save settings to localStorage:', e);
+  }
+  
+  // Save to synced storage
+  saveToSyncedStorage(settings)
+    .then(() => {
+      console.log('Settings saved successfully to chrome.storage.sync');
+      showStatusMessage('Settings saved successfully!');
+      elements.saveButton.textContent = 'Saved!';
+      
+      // Try to reload settings to verify they were saved correctly
+      return verifySettings(settings);
+    })
+    .catch((error) => {
+      console.error('Error saving settings:', error);
+      showStatusMessage('Failed to save settings: ' + error.message, true);
+    })
+    .finally(() => {
+      setTimeout(() => {
+        elements.saveButton.textContent = originalText;
+        elements.saveButton.disabled = false;
+      }, 2000);
+    });
+}
+
+// Function to save settings to synced storage
+function saveToSyncedStorage(settings) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.set(settings, function() {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// Function to verify settings were saved correctly
+function verifySettings(originalSettings) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.get(Object.keys(originalSettings), function(savedSettings) {
+      if (chrome.runtime.lastError) {
+        console.warn('Could not verify saved settings:', chrome.runtime.lastError);
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        // Check that all settings were saved correctly
+        let allCorrect = true;
+        const differences = {};
+        
+        // Compare each setting
+        for (const key in originalSettings) {
+          if (JSON.stringify(savedSettings[key]) !== JSON.stringify(originalSettings[key])) {
+            allCorrect = false;
+            differences[key] = {
+              original: originalSettings[key],
+              saved: savedSettings[key]
+            };
+          }
+        }
+        
+        if (allCorrect) {
+          console.log('All settings verified to be saved correctly');
+          resolve(true);
+        } else {
+          console.warn('Some settings were not saved correctly:', differences);
+          // We'll still resolve because the save technically worked
+          resolve(false);
+        }
+      }
+    });
   });
 }
 

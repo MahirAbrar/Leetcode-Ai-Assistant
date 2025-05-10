@@ -682,7 +682,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
   
   if (request.action === 'modeChanged') {
+    console.log('Mode changed from', currentMode, 'to', request.mode);
     currentMode = request.mode;
+    
     const button = document.getElementById(CONFIG.buttonId);
     if (button) {
       button.title = `Get ${currentMode}`;
@@ -694,8 +696,29 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       headerText.textContent = `AI Assistant (${currentMode})`;
     }
     
+    // Add a notification about mode change if panel is visible
+    const chatContainer = document.querySelector(`#${CONFIG.responseContainerId} .ai-chat-container`);
+    if (chatContainer && document.getElementById(CONFIG.responseContainerId).style.display !== 'none') {
+      const modeNotification = document.createElement('div');
+      modeNotification.className = 'mode-notification';
+      modeNotification.style.padding = '8px 12px';
+      modeNotification.style.margin = '8px 0';
+      modeNotification.style.backgroundColor = '#d4edda';
+      modeNotification.style.color = '#155724';
+      modeNotification.style.borderRadius = '4px';
+      modeNotification.style.fontStyle = 'italic';
+      modeNotification.style.textAlign = 'center';
+      modeNotification.textContent = `Hint mode changed to: ${currentMode}`;
+      chatContainer.appendChild(modeNotification);
+      
+      // Scroll to show the notification
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
     // Update action buttons when mode changes
     updateActionButtons();
+    
+    console.log('Mode update complete, current mode is now:', currentMode);
   }
   
   // Always return true for asynchronous response
@@ -745,6 +768,7 @@ function updateActionButtons() {
 // Function to handle action button clicks
 function handleActionButtonClick(actionId) {
   console.log('Action button clicked:', actionId);
+  console.log('Current hint mode:', currentMode);
   
   // Get problem data and code
   const problemData = extractProblemData();
