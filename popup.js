@@ -26,11 +26,11 @@ const CONFIG = {
       keyFormat: apiKey => apiKey.startsWith('gsk_') && apiKey.length >= 40,
       keyFormatError: 'Invalid API key format. Groq API keys start with "gsk_" and are typically around 50-60 characters long.',
       modelDetails: {
-        default: { name: 'Llama 4 Scout (17B)', description: 'Fast and efficient 17B parameter model, great for quick hints' },
-        advanced: { name: 'Mixtral 8x7B', description: 'Powerful 8x7B parameter model, excellent for detailed problem analysis' },
-        llama3: { name: 'Llama 3 (70B)', description: 'State-of-the-art 70B parameter model, best for complex problems' },
-        gemma: { name: 'Gemma 7B', description: 'Lightweight 7B parameter model, good for quick responses' },
-        mistral: { name: 'Mistral 7B', description: 'Efficient 7B parameter model, great balance of speed and capability' }
+        default: { name: 'Llama 4 Scout (17B)', description: 'Best overall performance. Great balance of speed and capability. Recommended for most users.' },
+        advanced: { name: 'Mixtral 8x7B', description: 'Excellent reasoning with higher token limit. Good for complex multi-step problems. Medium cost.' },
+        llama3: { name: 'Llama 3 (70B)', description: 'Most powerful model. Best for difficult problems but slower response time. Higher cost.' },
+        gemma: { name: 'Gemma 7B', description: 'Lightweight model with good performance. Fast responses at lower cost. Good for simpler problems.' },
+        mistral: { name: 'Mistral 7B', description: 'Efficient model with excellent speed. Lowest cost option with responsive performance.' }
       }
     },
     openai: {
@@ -39,11 +39,11 @@ const CONFIG = {
       keyFormat: apiKey => apiKey.startsWith('sk-') && apiKey.length >= 40,
       keyFormatError: 'Invalid API key format. OpenAI API keys start with "sk-" and are typically around 50-60 characters long.',
       modelDetails: {
-        default: { name: 'GPT-4o', description: 'Latest multi-modal model with excellent reasoning capabilities' },
-        advanced: { name: 'GPT-4.1', description: 'Newest generation model with advanced reasoning abilities' },
-        llama3: { name: 'GPT-4.1 (High Precision)', description: 'GPT-4.1 configured for maximum accuracy and detail' },
-        gemma: { name: 'GPT-4.1-mini', description: 'Compact version of GPT-4.1 with excellent performance' },
-        mistral: { name: 'GPT-4o-mini', description: 'Lightweight version of GPT-4o offering speed and efficiency' }
+        default: { name: 'GPT-4o', description: 'Flagship model with excellent reasoning. Best balance of quality and speed. Medium-high cost.' },
+        advanced: { name: 'GPT-4.1', description: 'Latest GPT model with advanced reasoning. Best quality but higher cost. Good for complex problems.' },
+        llama3: { name: 'GPT-4.1 (High Precision)', description: 'Premium configuration for maximum accuracy. Highest cost but best results for difficult problems.' },
+        gemma: { name: 'GPT-4.1-mini', description: 'Efficient GPT-4.1 variant that is faster at lower cost. Good balance for most problems.' },
+        mistral: { name: 'GPT-4o-mini', description: 'Fast and efficient model with lowest cost. Quick responses for simpler problems.' }
       }
     }
   }
@@ -73,6 +73,11 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
   }
+  
+  // Initialize model options based on initial provider selection (before loading settings)
+  const initialProvider = elements.apiProviderSelect.value;
+  updateModelOptions(initialProvider);
+  console.log('Initialized model options for provider:', initialProvider);
   
   // IMPORTANT: Load settings FIRST before setting up any event handlers
   // This ensures saved settings take precedence over default values
@@ -104,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update model option texts and descriptions
     updateModelOptions(provider);
+    console.log('Updated model options for provider:', provider);
     
     validateApiKey();
     
@@ -264,8 +270,29 @@ function updateModelOptions(provider) {
     const modelDetail = providerModelDetails[modelKey];
     
     if (modelDetail) {
+      // Display the actual model name as the option text
       option.text = modelDetail.name;
+      
+      // Set detailed description as the title (tooltip)
       option.title = modelDetail.description;
+      
+      // Add visual indicator for performance characteristics 
+      let indicator = '';
+      
+      if (modelKey === 'default') {
+        indicator = '⭐ '; // Recommended
+      } else if (modelKey === 'advanced') {
+        indicator = '🔍 '; // Best quality
+      } else if (modelKey === 'llama3') {
+        indicator = '🚀 '; // Most powerful
+      } else if (modelKey === 'gemma') {
+        indicator = '⚖️ '; // Balanced
+      } else if (modelKey === 'mistral') {
+        indicator = '⚡ '; // Fast & efficient
+      }
+      
+      // Combine indicator with model name
+      option.text = indicator + modelDetail.name;
     }
   }
 }
