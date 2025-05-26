@@ -9,13 +9,8 @@
     "48": "icons/icon16.png",
     "128": "icons/icon16.png"
   },
-  "permissions": [
-    "storage",
-    "activeTab"
-  ],
-  "host_permissions": [
-    "https://leetcode.com/*"
-  ],
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://leetcode.com/*"],
   "background": {
     "service_worker": "background.js"
   },
@@ -36,10 +31,11 @@
     },
     "default_title": "LeetCode AI Assistant"
   },
+  "options_page": "options.html",
   "web_accessible_resources": [
     {
       "resources": ["icons/*"],
       "matches": ["https://leetcode.com/*"]
     }
   ]
-} 
+}

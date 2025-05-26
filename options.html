@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LeetCode AI Assistant - Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="options-container">
+      <header class="options-header">
+        <div class="header-content">
+          <h1><span class="icon">🤖</span> LeetCode AI Assistant</h1>
+          <p class="subtitle">Configure your AI-powered coding assistant</p>
+        </div>
+      </header>
+
+      <main class="options-main">
+        <div class="settings-grid">
+          <!-- API Configuration Section -->
+          <section class="settings-card">
+            <div class="card-header">
+              <h2><span class="section-icon">🔑</span> API Configuration</h2>
+              <p>Configure your AI provider and authentication</p>
+            </div>
+
+            <div class="card-content">
+              <div class="form-group">
+                <label for="apiProvider">API Provider</label>
+                <select id="apiProvider" class="form-select">
+                  <option value="groq">Groq API</option>
+                  <option value="openai">OpenAI API</option>
+                </select>
+                <p class="input-help">
+                  Choose your preferred AI service provider
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label for="apiKey">API Key</label>
+                <div class="api-key-input-container">
+                  <input
+                    type="password"
+                    id="apiKey"
+                    placeholder="Enter your API key"
+                    class="form-input"
+                  />
+                  <button
+                    type="button"
+                    id="toggleApiKey"
+                    class="toggle-visibility-btn"
+                    title="Toggle visibility"
+                  >
+                    <span class="show-icon">👁️</span>
+                    <span class="hide-icon" style="display: none">🙈</span>
+                  </button>
+                  <span id="apiKeyStatus" class="api-key-status"></span>
+                </div>
+                <div class="api-key-help">
+                  <p class="input-help" id="apiKeyHelp">Get a key from Groq</p>
+                  <div class="api-links">
+                    <a
+                      href="https://console.groq.com/keys"
+                      target="_blank"
+                      id="groqLink"
+                      class="api-link"
+                      >Get Groq API Key</a
+                    >
+                    <a
+                      href="https://platform.openai.com/api-keys"
+                      target="_blank"
+                      id="openaiLink"
+                      class="api-link"
+                      style="display: none"
+                      >Get OpenAI API Key</a
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- AI Model Configuration Section -->
+          <section class="settings-card">
+            <div class="card-header">
+              <h2><span class="section-icon">🧠</span> AI Model Settings</h2>
+              <p>Customize the AI model behavior and parameters</p>
+            </div>
+
+            <div class="card-content">
+              <div class="form-group">
+                <label for="model">AI Model</label>
+                <select id="model" class="form-select">
+                  <option value="default">Default Model</option>
+                  <option value="advanced">Advanced Model</option>
+                  <option value="llama3">Most Powerful</option>
+                  <option value="gemma">Balanced</option>
+                  <option value="mistral">Fast & Efficient</option>
+                </select>
+                <p class="input-help">
+                  Select your preferred model. Hover for details about
+                  capabilities, speed, and cost.
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label for="temperature">Temperature</label>
+                <div class="temperature-container">
+                  <input
+                    type="range"
+                    id="temperature"
+                    min="0.3"
+                    max="0.9"
+                    step="0.1"
+                    value="0.7"
+                    class="temperature-slider"
+                  />
+                  <div class="temperature-display">
+                    <span id="temperatureValue">0.7</span>
+                    <span class="temperature-range"
+                      >(<span id="temperatureMin">0.3</span> -
+                      <span id="temperatureMax">0.9</span>)</span
+                    >
+                  </div>
+                </div>
+                <p class="input-help">
+                  Higher values make responses more creative, lower values more
+                  focused. Range adjusts based on selected model.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Assistance Mode Section -->
+          <section class="settings-card">
+            <div class="card-header">
+              <h2><span class="section-icon">💡</span> Assistance Mode</h2>
+              <p>Choose how the AI explains solutions to you</p>
+            </div>
+
+            <div class="card-content">
+              <div class="form-group">
+                <label for="assistMode">Hint Level</label>
+                <select id="assistMode" class="form-select">
+                  <option value="Small Hints">Small Hints</option>
+                  <option value="Medium Hints">Medium Hints</option>
+                  <option value="Big Hints">Big Hints</option>
+                  <option value="Metaphorical Hints">Metaphorical Hints</option>
+                </select>
+                <p class="input-help">
+                  Choose how detailed you want the AI's guidance to be
+                </p>
+              </div>
+
+              <div class="mode-descriptions">
+                <div class="mode-description" data-mode="Small Hints">
+                  <strong>Small Hints:</strong> Minimal guidance that points you
+                  in the right direction
+                </div>
+                <div class="mode-description" data-mode="Medium Hints">
+                  <strong>Medium Hints:</strong> Moderate guidance with specific
+                  suggestions
+                </div>
+                <div class="mode-description" data-mode="Big Hints">
+                  <strong>Big Hints:</strong> Detailed step-by-step guidance
+                </div>
+                <div class="mode-description" data-mode="Metaphorical Hints">
+                  <strong>Metaphorical Hints:</strong> Creative explanations
+                  using stories and analogies
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Usage Statistics Section -->
+          <section class="settings-card">
+            <div class="card-header">
+              <h2><span class="section-icon">📊</span> Usage Statistics</h2>
+              <p>Track your AI assistant usage</p>
+            </div>
+
+            <div class="card-content">
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <div class="stat-value" id="usageCount">0</div>
+                  <div class="stat-label">Total Queries</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value" id="currentStreak">Never used</div>
+                  <div class="stat-label">Last Activity</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="options-footer">
+        <div class="footer-content">
+          <div id="statusMessage" class="status-message"></div>
+          <div class="footer-actions">
+            <button id="resetSettings" class="secondary-button">
+              Reset to Defaults
+            </button>
+            <button id="saveSettings" class="primary-button">
+              Save Settings
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
